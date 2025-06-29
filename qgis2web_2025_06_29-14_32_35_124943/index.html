@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Peta WebGIS Instiper</title>
+    <link rel="stylesheet" href="./resources/ol.css">
+    <link rel="stylesheet" href="resources/fontawesome-all.min.css">
+    <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+    <link rel="stylesheet" href="./resources/qgis2web.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol-ext/dist/ol-ext.min.css">
+    <style>
+        html, body {
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        header {
+            background: linear-gradient(90deg, #530f0f 0%, #a83232 100%);
+            color: #fff;
+            padding: 16px 0;
+            text-align: center;
+            letter-spacing: 2px;
+            font-size: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .about-icon-btn {
+            position: absolute;
+            right: 32px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            font-size: 1.7rem;
+            transition: color 0.2s;
+        }
+        .about-icon-btn:hover {
+            color: #ffd6d6;
+        }
+        #map {
+            flex: 1;
+            margin: 0 auto 24px auto;
+            max-width: 900px;
+            width: 100%;
+            min-height: 350px;
+            box-shadow: 0 4px 24px rgba(83,15,15,0.15);
+            border-radius: 0 0 16px 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        .ol-legend {
+            position: absolute !important;
+            right: 16px !important;
+            top: 16px !important;
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 10px 16px;
+            max-width: 90vw;
+        }
+        .outline-tools {
+            position: absolute;
+            left: 16px;
+            bottom: 16px;
+            z-index: 1200;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .outline-tools label {
+            font-size: 1rem;
+            color: #530f0f;
+        }
+        footer {
+            background: #f8f8f8;
+            color: #530f0f;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 1rem;
+            border-top: 1px solid #eee;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 900px) {
+            #map {
+                max-width: 100vw;
+                margin: 0 0 24px 0;
+                border-radius: 0 0 12px 12px;
+            }
+            .ol-legend {
+                right: 8px !important;
+                top: 8px !important;
+                padding: 8px 8px;
+                font-size: 0.95rem;
+                max-width: 98vw;
+            }
+            .outline-tools {
+                left: 8px;
+                bottom: 8px;
+                padding: 6px 8px;
+            }
+        }
+        @media (max-width: 600px) {
+            #map {
+                min-height: 220px;
+            }
+            .ol-legend {
+                font-size: 0.85rem;
+                padding: 6px 4px;
+            }
+            .outline-tools label {
+                font-size: 0.9rem;
+            }
+        }
+        /* Popup Card */
+        .about-popup-bg {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0; top: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.25);
+            justify-content: center;
+            align-items: center;
+        }
+        .about-popup-bg.active {
+            display: flex;
+        }
+        .about-card {
+            background: #fff;
+            color: #530f0f;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(83,15,15,0.25);
+            padding: 32px 28px 24px 28px;
+            min-width: 320px;
+            max-width: 90vw;
+            text-align: center;
+            position: relative;
+            animation: popIn 0.2s;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .about-card .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: #a83232;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .about-card h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        .about-card hr {
+            margin: 16px 0;
+        }
+        .about-card .kampus-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+         .map-tools {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1300;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 8px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .map-tools button, .map-tools select {
+            font-size: 1rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #a83232;
+            background: #fff;
+            color: #530f0f;
+            cursor: pointer;
+        }
+        .map-tools button:hover, .map-tools select:hover {
+            background: #ffd6d6;
+        }
+        .ol-ext-measure {
+            z-index: 1400 !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        WebGIS Instiper Yogyakarta
+        <button class="about-icon-btn" id="aboutBtn" title="Tentang WebGIS">
+            <i class="fas fa-info-circle"></i>
+        </button>
+    </header>
+    <div id="map">
+        <!-- Legend otomatis dari qgis2web biasanya sudah ada di sini -->
+        <div id="popup" class="ol-popup">
+            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <div id="popup-content"></div>
+        </div>
+        <div class="outline-tools" id="outlineTools">
+            <label for="outlineColor">Warna Garis</label>
+            <input type="color" id="outlineColor" value="#530f0f">
+        </div>
+        <div class="map-tools">
+            <button id="zoomToInstiper" title="Zoom ke Layer Instiper"><i class="fas fa-search-location"></i> Zoom Instiper</button>
+            <button id="measureBtn" title="Pengukuran"><i class="fas fa-ruler-combined"></i> Ukur</button>
+            <button id="geoBtn" title="Lokasi Saya"><i class="fas fa-location-arrow"></i> Lokasi Saya</button>
+            <select id="basemapSelect" title="Ganti Basemap">
+                <option value="osm">OpenStreetMap</option>
+                <option value="satellite">Satelit</option>
+            </select>
+        </div>
+    </div>
+    <div id="popup" class="ol-popup">
+            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <div id="popup-content"></div>
+        </div>
+        <div class="outline-tools" id="outlineTools">
+            <label for="outlineColor">Warna Garis</label>
+            <input type="color" id="outlineColor" value="#530f0f">
+        </div>
+    <footer>
+        &copy; 2025 Instiper Yogyakarta | Wahyu Budyarto
+    </footer>
+
+    <!-- Popup About -->
+    <div class="about-popup-bg" id="aboutPopup">
+        <div class="about-card">
+            <span class="close-btn" id="closeAbout">&times;</span>
+            <img src="C:\Users\wahyubudyarto\Documents\webgis qgis\data vscode\qgis2web_2025_06_29-14_32_35_124943\images\download.jpeg" alt="Logo Instiper" class="kampus-logo">
+            <h2>Institut Pertanian Stiper (INSTIPER)</h2>
+            <p>Jl. Nangka II, Papringan, Caturtunggal, Depok, Sleman, Yogyakarta</p>
+            <hr>
+            <p><b>Pembuat:</b><br>
+            Wahyu Budyarto<br>
+            NIM: 24027/2022/STIP/Teknik Pertanian</p>
+        </div>
+    </div>
+
+    <script src="resources/qgis2web_expressions.js"></script>
+    <script src="./resources/functions.js"></script>
+    <script src="./resources/ol.js"></script>
+    <script src="./resources/ol-layerswitcher.js"></script>
+    <script src="layers/Jalan_1.js"></script>
+    <script src="layers/Instiper_2.js"></script>
+    <script src="layers/pointinstiper_3.js"></script>
+    <script src="styles/Jalan_1_style.js"></script>
+    <script src="styles/Instiper_2_style.js"></script>
+    <script src="styles/pointinstiper_3_style.js"></script>
+    <script src="./layers/layers.js" type="text/javascript"></script> 
+    <script src="./resources/Autolinker.min.js"></script>
+    <script src="./resources/qgis2web.js"></script>
+    <script>
+        // Popup logic
+        const aboutBtn = document.getElementById('aboutBtn');
+        const aboutPopup = document.getElementById('aboutPopup');
+        const closeAbout = document.getElementById('closeAbout');
+        aboutBtn.onclick = () => aboutPopup.classList.add('active');
+        closeAbout.onclick = () => aboutPopup.classList.remove('active');
+        window.onclick = function(event) {
+            if (event.target === aboutPopup) {
+                aboutPopup.classList.remove('active');
+            }
+        }
+
+        // Outline color tools
+        document.getElementById('outlineColor').addEventListener('input', function() {
+            window.currentOutlineColor = this.value;
+            if (typeof window.lyr_Instiper_2 !== 'undefined') {
+                window.lyr_Instiper_2.setStyle(style_Instiper_2);
+            }
+        });
+        // Basemap Switcher
+        // Asumsi: map dan layersList sudah ada dari qgis2web.js
+        var osmBase = new ol.layer.Tile({
+            title: 'OpenStreetMap',
+            type: 'base',
+            visible: true,
+            source: new ol.source.OSM()
+        });
+        var satBase = new ol.layer.Tile({
+            title: 'Satelit',
+            type: 'base',
+            visible: false,
+            source: new ol.source.XYZ({
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+            })
+        });
+        map.getLayers().insertAt(0, satBase);
+        map.getLayers().insertAt(0, osmBase);
+
+        document.getElementById('basemapSelect').addEventListener('change', function() {
+            var val = this.value;
+            osmBase.setVisible(val === 'osm');
+            satBase.setVisible(val === 'satellite');
+        });
+
+        // Zoom to Layer Instiper
+        document.getElementById('zoomToInstiper').onclick = function() {
+            if (typeof window.lyr_Instiper_2 !== 'undefined') {
+                var extent = window.lyr_Instiper_2.getSource().getExtent();
+                map.getView().fit(extent, { duration: 1000, maxZoom: 19 });
+            }
+        };
+
+        // Geolocation
+        document.getElementById('geoBtn').onclick = function() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    var coords = ol.proj.fromLonLat([pos.coords.longitude, pos.coords.latitude]);
+                    map.getView().animate({center: coords, zoom: 18, duration: 1000});
+                    var marker = new ol.Feature(new ol.geom.Point(coords));
+                    marker.setStyle(new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: 8,
+                            fill: new ol.style.Fill({color: '#4287f5'}),
+                            stroke: new ol.style.Stroke({color: '#fff', width: 2})
+                        })
+                    }));
+                    var vectorLayer = new ol.layer.Vector({
+                        source: new ol.source.Vector({features: [marker]}),
+                        zIndex: 9999
+                    });
+                    map.addLayer(vectorLayer);
+                    setTimeout(() => map.removeLayer(vectorLayer), 5000);
+                });
+            } else {
+                alert("Geolocation tidak didukung browser Anda.");
+            }
+        };
+        // Measurement Tools (ol-ext)
+        var measureCtrl = new ol.control.Measure({
+            type: 'LineString',
+            color: '#a83232',
+            showSegmentLength: true,
+            geodesic: true
+        });
+        map.addControl(measureCtrl);
+
+        document.getElementById('measureBtn').onclick = function() {
+            measureCtrl.setActive(!measureCtrl.getActive());
+            this.style.background = measureCtrl.getActive() ? '#ffd6d6' : '#fff';
+        };
+    </script>
+</body>
+</html>
